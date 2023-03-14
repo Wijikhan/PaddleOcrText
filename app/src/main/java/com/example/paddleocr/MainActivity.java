@@ -20,6 +20,9 @@ import com.example.paddleocrlib.OcrPredictionForImageText;
 
 public class MainActivity extends AppCompatActivity {
     OcrPredictionForImageText obj;
+
+
+
     private static final int INTENT_CODE_PICK_IMAGE = 100;
 
     Uri selectedImageUri;
