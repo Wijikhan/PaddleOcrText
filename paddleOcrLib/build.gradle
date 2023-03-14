@@ -1,0 +1,133 @@
+import java.security.MessageDigest
+
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.example.paddleocrlib'
+    compileSdk 33
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 33
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.aar'], dir: 'libs')
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.github.kurzdigital:mrzparser-java:1.0.0'
+    implementation 'org.jetbrains:annotations:16.0.1'
+
+}
+
+
+
+
+
+def FD_MODEL = [
+        [
+                'src' : 'https://bj.bcebos.com/paddlehub/fastdeploy/ch_PP-OCRv3_det_infer.tgz',
+                'dest': 'src/main/assets/models'
+        ],
+        [
+                'src' : 'https://bj.bcebos.com/paddlehub/fastdeploy/ch_ppocr_mobile_v2.0_cls_infer.tgz',
+                'dest': 'src/main/assets/models'
+        ],
+        [
+                'src' : 'https://bj.bcebos.com/paddlehub/fastdeploy/ch_PP-OCRv3_rec_infer.tgz',
+                'dest': 'src/main/assets/models'
+        ]
+]
+
+def FD_JAVA_SDK = [
+        [
+                'src' : 'https://bj.bcebos.com/fastdeploy/test/fastdeploy-android-sdk-latest-dev.aar',
+                'dest': 'libs'
+        ]
+]
+
+task downloadAndExtractModels(type: DefaultTask) {
+    doFirst {
+        println "Downloading and extracting fastdeploy models ..."
+    }
+    doLast {
+        String cachePath = "cache"
+        if (!file("${cachePath}").exists()) {
+            mkdir "${cachePath}"
+        }
+        FD_MODEL.eachWithIndex { model, index ->
+            MessageDigest messageDigest = MessageDigest.getInstance('MD5')
+            messageDigest.update(model.src.bytes)
+            String[] modelPaths = model.src.split("/")
+            String modelName = modelPaths[modelPaths.length - 1]
+            // Download the target model if not exists
+            boolean copyFiles = !file("${model.dest}").exists()
+            if (!file("${cachePath}/${modelName}").exists()) {
+                println "Downloading ${model.src} -> ${cachePath}/${modelName}"
+                ant.get(src: model.src, dest: file("${cachePath}/${modelName}"))
+                copyFiles = true
+            }
+            if (copyFiles) {
+                println "Coping ${cachePath}/${modelName} -> ${model.dest}"
+                copy {
+                    from tarTree("${cachePath}/${modelName}")
+                    into "${model.dest}"
+                }
+            }
+        }
+    }
+}
+
+task downloadAndExtractSDKs(type: DefaultTask) {
+    doFirst {
+        println "Downloading and extracting fastdeploy android java sdk ..."
+    }
+    doLast {
+        String cachePath = "cache"
+        if (!file("${cachePath}").exists()) {
+            mkdir "${cachePath}"
+        }
+        FD_JAVA_SDK.eachWithIndex { sdk, index ->
+            String[] sdkPaths = sdk.src.split("/")
+            String sdkName = sdkPaths[sdkPaths.length - 1]
+            // Download the target SDK if not exists
+            boolean copyFiles = !file("${sdk.dest}/${sdkName}").exists()
+            if (!file("${cachePath}/${sdkName}").exists()) {
+                println "Downloading ${sdk.src} -> ${cachePath}/${sdkName}"
+                ant.get(src: sdk.src, dest: file("${cachePath}/${sdkName}"))
+                copyFiles = true
+            }
+            if (copyFiles) {
+                println "Coping ${cachePath}/${sdkName} -> ${sdk.dest}/${sdkName}"
+                copy {
+                    from "${cachePath}/${sdkName}"
+                    into "${sdk.dest}"
+                }
+            }
+        }
+    }
+}
+
+preBuild.dependsOn downloadAndExtractSDKs
+preBuild.dependsOn downloadAndExtractModels
