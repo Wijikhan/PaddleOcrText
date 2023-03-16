@@ -2,6 +2,7 @@ package com.example.paddleocrlib;
 
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.SystemClock;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
 
 
 public class OcrPredictionForImageText {
-    private Bitmap picBitmap;
+    static public Bitmap picBitmap;
     private Bitmap originPicBitmap;
 
     public String modelDir = "";
@@ -57,10 +58,15 @@ public class OcrPredictionForImageText {
         result = new OCRResult();
         resultObje = new BaseResult();
 
+            String path = Utils.getRealPathFromURI(context, uri);
+
+           picBitmap = Utils.decodeBitmap(path, 1920, 1080);
+
+       // context.startActivity(new Intent(context , EmptyActivity.class).putExtra("path" , path));
         if (checkAndUpdateSettings(context))
         {
             resultNum = confidencce;
-            String path = Utils.getRealPathFromURI(context, uri);
+
 
             picBitmap = Utils.decodeBitmap(path, 1920, 1080);
             originPicBitmap = picBitmap.copy(Bitmap.Config.ARGB_8888, true);
@@ -151,7 +157,20 @@ public class OcrPredictionForImageText {
                         }
                     }
                 }
-                boolean passport = line.toLowerCase().contains("passport");
+                boolean passport =
+                        line.toLowerCase().contains("passport")
+                                || line.toUpperCase().contains("assport")
+                                || line.toUpperCase().contains("passspor")
+                                || line.toUpperCase().contains("asspor")
+                                || line.toUpperCase().contains("<<<<<<<<<<")
+                                || line.toUpperCase().contains("passeport")
+                                || line.toUpperCase().contains("asseport")
+                                || line.toUpperCase().contains("assepor")
+
+
+
+                        ;
+
 
                 String surnameRegex = "Surname:\\s*(\\S+)";
                 String namesRegex = "Names:\\s*(\\S+(?:\\s+\\S+)*)";
@@ -185,7 +204,12 @@ public class OcrPredictionForImageText {
                     resultObje.setPassport(true);
 
                 } else {
-                    if (line.toUpperCase().contains("AFRICA")) {
+                    if (line.toUpperCase().contains("AFRICA")
+                            || line.toUpperCase().contains("")
+                            || line.toUpperCase().contains("SOUTHAFRICA")
+                            || line.toUpperCase().contains("OUTHAFRICA")
+
+                    ) {
                         Matcher surnameMatcher = Pattern.compile(surnameRegex).matcher(line);
                         Matcher namesMatcher = Pattern.compile(namesRegex).matcher(line);
                         Matcher sexMatcher = Pattern.compile(sexRegex).matcher(line);
@@ -223,7 +247,12 @@ public class OcrPredictionForImageText {
 
 
                     } else {
-                        if (line.toUpperCase().contains("ZIMBABWE")) {
+
+                        if (line.toUpperCase().contains("ZIMBABWE")
+                                || line.toUpperCase().contains("IMBABWE")
+                                || line.toUpperCase().contains("IMBABW")
+                                || line.toUpperCase().contains("ZIMBABW")
+                        ) {
                             resultObje.setZimbabwe(true);
                             String idNumberPattern = "\\bID\\sNUMBER\\s+(\\d{2}-\\d{6}\\s\\w{3})";
                             String surnamePattern = "\\bSURNAME\\s+(\\w+)";
